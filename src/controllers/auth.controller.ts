@@ -18,6 +18,7 @@ const RegisterSchema = z.object({
 const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  rememberMe: z.boolean().optional(),
 });
 
 const ForgotPasswordSchema = z.object({
@@ -63,7 +64,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = LoginSchema.parse(req.body);
+    const { email, password, rememberMe } = LoginSchema.parse(req.body);
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -77,10 +78,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const expiresIn = rememberMe ? '30d' : '24h';
+
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn }
     );
 
     res.status(200).json({

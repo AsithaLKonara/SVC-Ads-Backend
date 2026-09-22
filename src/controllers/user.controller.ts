@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import bcrypt from 'bcrypt';
 import prisma from '../utils/db';
 
 const UpdateRoleSchema = z.object({
@@ -20,6 +21,51 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const CreateUserSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(['ADMIN', 'STAFF']).default('STAFF'),
+});
+
+export const createUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, password, role } = CreateUserSchema.parse(req.body);
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      res.status(400).json({ message: 'User already exists' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      }
+    });
+
+    res.status(201).json({ message: 'User created successfully', user });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: 'Validation error', errors: (error as any).errors });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
   }
 };
 
