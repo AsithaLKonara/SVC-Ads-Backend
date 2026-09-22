@@ -20,6 +20,8 @@ model User {
   resetToken       String?
   resetTokenExpiry DateTime?
 
+  ads              Ad[]      @relation("UserAds")
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
@@ -37,7 +39,42 @@ model Category {
   sortOrder   Int        @default(0)
   attributes  Json?
 
+  ads         Ad[]       @relation("CategoryAds")
+
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
 
+enum AdStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Ad {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  description String
+  price       Float
+  condition   String?  // Optional, e.g., "New", "Used"
+  images      Json?    // Array of image URLs
+  isFeatured  Boolean  @default(false)
+  contactPhone String? // Optional contact number for the ad
+  attributes  Json?    // Dynamic fields filled for this ad
+  
+  // Dynamic Locations
+  district    String
+  city        String
+  
+  // Relations
+  categoryId  String
+  category    Category @relation("CategoryAds", fields: [categoryId], references: [id])
+  
+  userId      String
+  user        User     @relation("UserAds", fields: [userId], references: [id])
+  
+  status      AdStatus @default(ACTIVE)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
