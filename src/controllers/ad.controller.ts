@@ -118,6 +118,35 @@ export const getAdByIdOrSlug = async (req: Request, res: Response) => {
   }
 };
 
+export const getLocationStats = async (req: Request, res: Response) => {
+  try {
+    const stats = await prisma.ad.groupBy({
+      by: ['district'],
+      where: {
+        status: 'ACTIVE'
+      },
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        _count: {
+          id: 'desc'
+        }
+      }
+    });
+
+    const formattedStats = stats.map(s => ({
+      district: s.district,
+      count: s._count.id
+    }));
+
+    res.json(formattedStats);
+  } catch (error) {
+    console.error('Error in getLocationStats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export const updateAd = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
