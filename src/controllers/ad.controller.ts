@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/db';
+import { Prisma } from '@prisma/client';
 import slugify from 'slugify';
 import { logAuditEvent } from '../utils/audit';
 
@@ -69,7 +70,7 @@ export const getAds = async (req: Request, res: Response) => {
   try {
     const { category, district, city, status, isFeatured, limit, page, minPrice, maxPrice, condition, q, sort } = req.query;
 
-    const where: any = {};
+    const where: Prisma.AdWhereInput = {};
     if (category) {
       // Find category and its children to filter
       const cat = await prisma.category.findUnique({
@@ -77,7 +78,7 @@ export const getAds = async (req: Request, res: Response) => {
         include: { children: true }
       });
       if (cat) {
-        const categoryIds = [cat.id, ...cat.children.map((c: any) => c.id)];
+        const categoryIds = [cat.id, ...cat.children.map((c: { id: string }) => c.id)];
         where.categoryId = { in: categoryIds };
       }
     }
@@ -91,7 +92,7 @@ export const getAds = async (req: Request, res: Response) => {
     }
 
     if (city) where.city = String(city);
-    if (status) where.status = String(status);
+    if (status) where.status = String(status) as any;
     if (isFeatured === 'true') where.isFeatured = true;
 
     if (minPrice || maxPrice) {
@@ -124,7 +125,7 @@ export const getAds = async (req: Request, res: Response) => {
     const skip = (pageNumber - 1) * limitNumber;
 
     // Sorting
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: Prisma.AdOrderByWithRelationInput = { createdAt: 'desc' };
     if (sort === 'price-asc') {
       orderBy = { price: 'asc' };
     } else if (sort === 'price-desc') {
@@ -227,7 +228,7 @@ export const updateAd = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Ad not found' });
     }
 
-    const data: any = {
+    const data: Prisma.AdUncheckedUpdateInput = {
       title,
       description,
       condition,

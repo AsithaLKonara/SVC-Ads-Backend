@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/db';
+import { Prisma } from '@prisma/client';
 
 export const getAuditLogs = async (req: Request, res: Response) => {
   try {
@@ -9,7 +10,7 @@ export const getAuditLogs = async (req: Request, res: Response) => {
     const limitNumber = limit ? parseInt(String(limit)) : 25;
     const skip = (pageNumber - 1) * limitNumber;
 
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
 
     if (entity && entity !== 'All') where.entity = String(entity);
     if (action) where.action = String(action);
