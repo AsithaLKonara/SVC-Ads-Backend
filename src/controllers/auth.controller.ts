@@ -190,3 +190,58 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     }
   }
 };
+
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(6),
+});
+
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = ChangePasswordSchema.parse(req.body);
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      res.status(400).json({ message: 'Incorrect current password' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    await logAuditEvent({
+      action: 'PASSWORD_CHANGED',
+      entity: 'User',
+      entityId: user.id,
+      entityName: user.name,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      ipAddress: req.ip || req.socket.remoteAddress,
+    });
+
+    res.status(200).json({ message: 'Password has been changed successfully' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: 'Validation error', errors: (error as any).errors });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+};
