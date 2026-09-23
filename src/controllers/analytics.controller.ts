@@ -123,23 +123,32 @@ export const getStats = async (req: Request, res: Response) => {
     }));
 
     // 5. Top Performing Ads
-    // We can sort ads by views in Ad model
+    const limit = req.query.limit ? parseInt(String(req.query.limit)) : 5;
     const topPerformingAds = await prisma.ad.findMany({
-      take: 5,
+      take: limit,
       orderBy: { views: 'desc' },
       select: {
         id: true,
         title: true,
-        views: true
+        views: true,
+        price: true
       }
     });
+
+    // 6. Total Listed Value (Sum of prices of all active ads)
+    const activeAds = await prisma.ad.aggregate({
+      where: { status: 'ACTIVE' },
+      _sum: { price: true }
+    });
+    const totalListedValue = activeAds._sum.price || 0;
 
     res.status(200).json({
       totalSiteViews,
       totalAdViews,
       uniqueVisitors,
       trafficOverTime,
-      topPerformingAds
+      topPerformingAds,
+      totalListedValue
     });
   } catch (error) {
     console.error('Error getting stats:', error);
