@@ -55,7 +55,7 @@ export const createAd = async (req: Request, res: Response) => {
 
 export const getAds = async (req: Request, res: Response) => {
   try {
-    const { category, district, city, status, isFeatured, limit } = req.query;
+    const { category, district, city, status, isFeatured, limit, page, minPrice, maxPrice, condition, q, sort } = req.query;
 
     const where: any = {};
     if (category) {
@@ -69,22 +69,76 @@ export const getAds = async (req: Request, res: Response) => {
         where.categoryId = { in: categoryIds };
       }
     }
-    if (district) where.district = String(district);
+
+    if (district) {
+      if (Array.isArray(district)) {
+        where.district = { in: district.map(d => String(d)) };
+      } else {
+        where.district = String(district);
+      }
+    }
+
     if (city) where.city = String(city);
     if (status) where.status = String(status);
     if (isFeatured === 'true') where.isFeatured = true;
 
-    const ads = await prisma.ad.findMany({
-      where,
-      take: limit ? parseInt(String(limit)) : undefined,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        user: { select: { id: true, name: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(String(minPrice));
+      if (maxPrice) where.price.lte = parseFloat(String(maxPrice));
+    }
 
-    res.json(ads);
+    if (condition) {
+      if (Array.isArray(condition)) {
+        where.condition = { in: condition.map(c => String(c)) };
+      } else {
+        where.condition = String(condition);
+      }
+    }
+
+    if (q) {
+      where.OR = [
+        { title: { contains: String(q), mode: 'insensitive' } },
+        { description: { contains: String(q), mode: 'insensitive' } }
+      ];
+    }
+
+    // Pagination
+    const pageNumber = page ? parseInt(String(page)) : 1;
+    const limitNumber = limit ? parseInt(String(limit)) : 12;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // Sorting
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'price-asc') {
+      orderBy = { price: 'asc' };
+    } else if (sort === 'price-desc') {
+      orderBy = { price: 'desc' };
+    } else if (sort === 'newest') {
+      orderBy = { createdAt: 'desc' };
+    }
+
+    const [ads, total] = await prisma.$transaction([
+      prisma.ad.findMany({
+        where,
+        take: limitNumber,
+        skip,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          user: { select: { id: true, name: true } }
+        },
+        orderBy,
+      }),
+      prisma.ad.count({ where })
+    ]);
+
+    res.json({
+      data: ads,
+      total,
+      page: pageNumber,
+      totalPages: Math.ceil(total / limitNumber),
+      limit: limitNumber
+    });
   } catch (error) {
     console.error('Get ads error:', error);
     res.status(500).json({ message: 'Internal server error' });
