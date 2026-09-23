@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { register, login, forgotPassword, resetPassword } from '../controllers/auth.controller';
+import { register, login, forgotPassword, resetPassword, changePassword } from '../controllers/auth.controller';
 import { authLimiter } from '../middlewares/rateLimit.middleware';
+import { requireAuth } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -11,5 +12,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
+
+router.put('/change-password', requireAuth, changePassword);
 
 export default router;
