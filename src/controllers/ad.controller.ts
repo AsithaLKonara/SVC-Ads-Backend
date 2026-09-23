@@ -228,6 +228,10 @@ export const updateAd = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Ad not found' });
     }
 
+    if (req.user?.role !== 'ADMIN' && existingAd.userId !== req.user?.userId) {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to modify this ad' });
+    }
+
     const data: Prisma.AdUncheckedUpdateInput = {
       title,
       description,
@@ -240,7 +244,12 @@ export const updateAd = async (req: Request, res: Response) => {
     if (price !== undefined) data.price = parseFloat(price);
     if (images) data.images = images;
     if (status) data.status = status;
-    if (isFeatured !== undefined) data.isFeatured = isFeatured;
+    if (isFeatured !== undefined) {
+      if (req.user?.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Forbidden: Only admins can feature ads' });
+      }
+      data.isFeatured = isFeatured;
+    }
     if (contactPhone !== undefined) data.contactPhone = contactPhone;
     if (attributes !== undefined) data.attributes = attributes;
 
@@ -292,6 +301,14 @@ export const toggleAdStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    const existingAd = await prisma.ad.findUnique({ where: { id } });
+    if (!existingAd) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+    if (req.user?.role !== 'ADMIN' && existingAd.userId !== req.user?.userId) {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to modify this ad' });
+    }
+
     const updatedAd = await prisma.ad.update({
       where: { id },
       data: { status },
@@ -320,7 +337,15 @@ export const deleteAd = async (req: Request, res: Response) => {
     const id = String(req.params.id);
     
     // Fetch before deleting so we have name for the audit log
-    const existing = await prisma.ad.findUnique({ where: { id }, select: { title: true } });
+    const existing = await prisma.ad.findUnique({ where: { id }, select: { title: true, userId: true } });
+    if (!existing) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    if (req.user?.role !== 'ADMIN' && existing.userId !== req.user?.userId) {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to delete this ad' });
+    }
+
     await prisma.ad.delete({ where: { id } });
 
     await logAuditEvent({
