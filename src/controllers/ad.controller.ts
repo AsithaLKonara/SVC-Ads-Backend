@@ -111,7 +111,10 @@ export const getAds = async (req: Request, res: Response) => {
     if (q) {
       where.OR = [
         { title: { contains: String(q), mode: 'insensitive' } },
-        { description: { contains: String(q), mode: 'insensitive' } }
+        { description: { contains: String(q), mode: 'insensitive' } },
+        { city: { contains: String(q), mode: 'insensitive' } },
+        { district: { contains: String(q), mode: 'insensitive' } },
+        { category: { name: { contains: String(q), mode: 'insensitive' } } }
       ];
     }
 
