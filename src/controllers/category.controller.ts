@@ -29,6 +29,25 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// Public: Get sitemap for active categories
+export const getCategoriesSitemap = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      select: {
+        slug: true,
+        updatedAt: true,
+        parent: {
+          select: { slug: true }
+        }
+      },
+    });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch categories sitemap' });
+  }
+};
+
 // Admin: Get all top-level categories with children counts
 export const getAdminCategories = async (req: Request, res: Response): Promise<void> => {
   try {

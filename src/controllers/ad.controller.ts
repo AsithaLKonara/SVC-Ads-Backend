@@ -338,3 +338,19 @@ export const deleteAd = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const getAdsSitemap = async (req: Request, res: Response) => {
+  try {
+    const ads = await prisma.ad.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        slug: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    res.status(200).json(ads);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching ads sitemap' });
+  }
+};

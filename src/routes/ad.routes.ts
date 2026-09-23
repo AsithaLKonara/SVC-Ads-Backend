@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAd, getAds, getAdByIdOrSlug, updateAd, deleteAd, toggleAdStatus, getLocationStats } from '../controllers/ad.controller';
+import { createAd, getAds, getAdByIdOrSlug, updateAd, deleteAd, toggleAdStatus, getLocationStats, getAdsSitemap } from '../controllers/ad.controller';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -7,6 +7,7 @@ const router = Router();
 // Public routes
 router.get('/', getAds);
 router.get('/locations/stats', getLocationStats);
+router.get('/sitemap', getAdsSitemap);
 router.get('/:identifier', getAdByIdOrSlug);
 
 // Protected routes

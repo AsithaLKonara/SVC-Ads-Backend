@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getCategories,
+  getCategoriesSitemap,
   getAdminCategories,
   createCategory,
   updateCategory,
@@ -13,6 +14,7 @@ const router = Router();
 
 // Public route
 router.get('/', getCategories);
+router.get('/sitemap', getCategoriesSitemap);
 
 // Admin/Staff routes
 router.get('/admin', requireAuth, requireRole(['ADMIN', 'STAFF']), getAdminCategories);
