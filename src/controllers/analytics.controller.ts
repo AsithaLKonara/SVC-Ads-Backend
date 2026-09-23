@@ -34,6 +34,18 @@ export const trackVisit = async (req: Request, res: Response) => {
       }
     });
 
+    // Asynchronous self-cleanup of old records (fire and forget)
+    // Delete records older than 90 days to prevent unbound database bloat
+    const cleanupDate = new Date();
+    cleanupDate.setDate(cleanupDate.getDate() - 90);
+    prisma.siteVisit.deleteMany({
+      where: {
+        createdAt: {
+          lt: cleanupDate
+        }
+      }
+    }).catch(err => console.error('SiteVisit cleanup failed:', err));
+
     // If it's an ad visit, increment the views count on the Ad
     if (finalAdId) {
       // Check if we already incremented for this session to avoid spam (optional, but good practice)

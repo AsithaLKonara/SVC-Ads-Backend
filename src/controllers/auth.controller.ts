@@ -5,7 +5,7 @@ import { z } from 'zod';
 import prisma from '../utils/db';
 import crypto from 'crypto';
 import { logAuditEvent } from '../utils/audit';
-// import nodemailer from 'nodemailer'; // Skipping actual email transport for mockup
+import { sendPasswordResetEmail } from '../utils/mailer';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
@@ -139,9 +139,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       },
     });
 
-    // Mock sending email
-    console.log(`[Email Mock] To: ${email}, Reset Token: ${resetToken}`);
-    // In production, use nodemailer to send an actual link: http://frontend/reset-password?token=${resetToken}
+    // Send email using nodemailer
+    await sendPasswordResetEmail(email, resetToken);
 
     res.status(200).json({ message: 'If an account exists, a reset link was sent' });
   } catch (error) {

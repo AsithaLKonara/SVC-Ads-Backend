@@ -15,6 +15,18 @@ export const createAd = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ message: 'Invalid price: must be a positive number' });
+    }
+
+    if (categoryId) {
+      const categoryExists = await prisma.category.findUnique({ where: { id: categoryId } });
+      if (!categoryExists) {
+        return res.status(400).json({ message: 'Invalid category: categoryId does not exist' });
+      }
+    }
+
     // Generate unique slug
     let baseSlug = slugify(title, { lower: true, strict: true });
     let slug = baseSlug;
@@ -30,7 +42,7 @@ export const createAd = async (req: Request, res: Response) => {
         title,
         slug,
         description,
-        price: parseFloat(price),
+        price: parsedPrice,
         condition,
         images: images || [],
         district,
@@ -241,7 +253,21 @@ export const updateAd = async (req: Request, res: Response) => {
       categoryId,
     };
 
-    if (price !== undefined) data.price = parseFloat(price);
+    if (price !== undefined) {
+      const parsedPrice = parseFloat(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({ message: 'Invalid price: must be a positive number' });
+      }
+      data.price = parsedPrice;
+    }
+
+    if (categoryId) {
+      const categoryExists = await prisma.category.findUnique({ where: { id: categoryId } });
+      if (!categoryExists) {
+        return res.status(400).json({ message: 'Invalid category: categoryId does not exist' });
+      }
+    }
+
     if (images) data.images = images;
     if (status) data.status = status;
     if (isFeatured !== undefined) {
