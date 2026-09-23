@@ -6,6 +6,7 @@ import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import adRoutes from './routes/ad.routes';
 import locationRoutes from './routes/location.routes';
+import analyticsRoutes from './routes/analytics.routes';
 
 const app = express();
 
@@ -24,5 +25,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 export default app;

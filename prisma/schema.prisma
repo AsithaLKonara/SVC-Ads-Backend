@@ -74,7 +74,22 @@ model Ad {
   user        User     @relation("UserAds", fields: [userId], references: [id])
   
   status      AdStatus @default(ACTIVE)
+  views       Int      @default(0)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  visits      SiteVisit[]
+}
+
+model SiteVisit {
+  id        String   @id @default(uuid())
+  sessionId String
+  path      String
+  adId      String?
+  ad        Ad?      @relation(fields: [adId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([adId])
 }
