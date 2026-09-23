@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/db';
 import slugify from 'slugify';
+import { logAuditEvent } from '../utils/audit';
 
 export const createAd = async (req: Request, res: Response) => {
   try {
@@ -44,6 +45,17 @@ export const createAd = async (req: Request, res: Response) => {
         category: true,
         user: { select: { id: true, name: true, email: true } }
       }
+    });
+
+    await logAuditEvent({
+      action: 'AD_CREATED',
+      entity: 'Ad',
+      entityId: newAd.id,
+      entityName: newAd.title,
+      actorId: userId,
+      actorName: newAd.user?.name,
+      actorRole: req.user?.role,
+      ipAddress: req.ip || req.socket.remoteAddress,
     });
 
     res.status(201).json(newAd);
@@ -118,7 +130,7 @@ export const getAds = async (req: Request, res: Response) => {
       orderBy = { createdAt: 'desc' };
     }
 
-    const [ads, total] = await prisma.$transaction([
+    const [ads, total] = await Promise.all([
       prisma.ad.findMany({
         where,
         take: limitNumber,
@@ -249,6 +261,17 @@ export const updateAd = async (req: Request, res: Response) => {
       }
     });
 
+    await logAuditEvent({
+      action: 'AD_UPDATED',
+      entity: 'Ad',
+      entityId: updatedAd.id,
+      entityName: updatedAd.title,
+      actorId: req.user?.userId,
+      actorRole: req.user?.role,
+      metadata: { updatedFields: Object.keys(data) },
+      ipAddress: req.ip || req.socket.remoteAddress,
+    });
+
     res.json(updatedAd);
   } catch (error) {
     console.error('Update ad error:', error);
@@ -270,6 +293,17 @@ export const toggleAdStatus = async (req: Request, res: Response) => {
       data: { status },
     });
 
+    await logAuditEvent({
+      action: 'AD_STATUS_CHANGED',
+      entity: 'Ad',
+      entityId: updatedAd.id,
+      entityName: updatedAd.title,
+      actorId: req.user?.userId,
+      actorRole: req.user?.role,
+      metadata: { newStatus: status },
+      ipAddress: req.ip || req.socket.remoteAddress,
+    });
+
     res.json(updatedAd);
   } catch (error) {
     console.error('Toggle ad status error:', error);
@@ -281,7 +315,19 @@ export const deleteAd = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
     
+    // Fetch before deleting so we have name for the audit log
+    const existing = await prisma.ad.findUnique({ where: { id }, select: { title: true } });
     await prisma.ad.delete({ where: { id } });
+
+    await logAuditEvent({
+      action: 'AD_DELETED',
+      entity: 'Ad',
+      entityId: id,
+      entityName: existing?.title,
+      actorId: req.user?.userId,
+      actorRole: req.user?.role,
+      ipAddress: req.ip || req.socket.remoteAddress,
+    });
     
     res.json({ message: 'Ad deleted successfully' });
   } catch (error) {

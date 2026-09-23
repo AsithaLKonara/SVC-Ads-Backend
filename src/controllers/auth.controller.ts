@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma from '../utils/db';
 import crypto from 'crypto';
+import { logAuditEvent } from '../utils/audit';
 // import nodemailer from 'nodemailer'; // Skipping actual email transport for mockup
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
@@ -85,6 +86,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       JWT_SECRET,
       { expiresIn }
     );
+
+    await logAuditEvent({
+      action: 'AUTH_LOGIN',
+      entity: 'User',
+      entityId: user.id,
+      entityName: user.name,
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      ipAddress: req.ip || req.socket.remoteAddress,
+    });
 
     res.status(200).json({
       message: 'Login successful',

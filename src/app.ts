@@ -7,6 +7,7 @@ import categoryRoutes from './routes/category.routes';
 import adRoutes from './routes/ad.routes';
 import locationRoutes from './routes/location.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import auditLogRoutes from './routes/auditLog.routes';
 
 const app = express();
 
@@ -26,5 +27,6 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 export default app;
