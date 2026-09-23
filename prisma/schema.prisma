@@ -93,3 +93,22 @@ model SiteVisit {
   @@index([sessionId])
   @@index([adId])
 }
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String   // e.g. "AD_CREATED", "USER_DELETED"
+  entity     String   // e.g. "Ad", "User", "Category"
+  entityId   String?  // The affected record's ID
+  entityName String?  // Human-readable name (e.g. ad title)
+  actorId    String?  // Admin who performed the action
+  actorName  String?  // Admin's name at time of action
+  actorRole  String?  // Role at time of action
+  metadata   Json?    // Extra contextual data (before/after state, etc.)
+  ipAddress  String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity])
+  @@index([actorId])
+}
