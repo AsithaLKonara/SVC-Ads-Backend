@@ -4,9 +4,9 @@
   "description": "Backend for SVC ADS",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx prisma generate && tsc && tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop true --target es2022 --moduleResolution node --module commonjs --skipLibCheck",
-    "start": "npx prisma migrate deploy && node dist/prisma/prisma/seed.js && node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "build": "node init && npx prisma generate && tsc && tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop true --target es2022 --moduleResolution node --module commonjs --skipLibCheck",
+    "start": "node init && npx prisma migrate deploy && node dist/prisma/prisma/seed.js && node dist/index.js",
+    "dev": "node init && ts-node src/index.ts"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -22,6 +22,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.12.1",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^10.0.10",
     "pg": "^8.11.3",
     "slugify": "^1.6.9",
