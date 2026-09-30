@@ -30,9 +30,10 @@ async function main() {
 
   // Categories
   const categoriesData = [
-    { name: 'Properties', slug: 'properties', icon: 'Home' },
-    { name: 'Lands', slug: 'lands', icon: 'Map' },
-    { name: 'Rentals', slug: 'rentals', icon: 'Key' },
+    { name: 'Properties', slug: 'properties', icon: 'Home', image: '/images/pexels-naveen-annam-734127-2002431.jpg' },
+    { name: 'Lands', slug: 'lands', icon: 'Map', image: '/images/pexels-jakub-pabis-147246622-19963719.jpg' },
+    { name: 'Rentals', slug: 'rentals', icon: 'Key', image: '/images/pexels-the-ghazi-2152398165-33747708.jpg' },
+    { name: 'Commercial', slug: 'commercial', icon: 'Building', image: '/images/pexels-nikitapishchugin-29282319.jpg' },
   ];
 
   const createdCategories: any = {};
@@ -60,7 +61,7 @@ async function main() {
 
   const generateAd = (index: number) => {
     const isFeatured = index <= 5; // First 5 are featured
-    const typeInt = index % 3;
+    const typeInt = index % 4;
     let typeSlug = '';
     let title = '';
     let description = '';
@@ -82,12 +83,18 @@ async function main() {
       description = `Excellent investment opportunity! Prime land available in ${city}, ${district}. Perfect for residential or commercial development. Close to main roads and amenities.`;
       price = Math.floor(Math.random() * 20000000) + 5000000;
       attributes = { size: (Math.floor(Math.random() * 100) + 10) + ' perches' };
-    } else {
+    } else if (typeInt === 2) {
       typeSlug = 'rentals';
       title = `Modern Apartment for Rent in ${city}`;
       description = `Fully furnished modern apartment available for rent in the heart of ${city}, ${district}. Features amazing city views, 24/7 security, and a swimming pool.`;
       price = Math.floor(Math.random() * 150000) + 40000;
       attributes = { beds: Math.floor(Math.random() * 3) + 1, baths: Math.floor(Math.random() * 2) + 1, term: 'Per Month' };
+    } else {
+      typeSlug = 'commercial';
+      title = `Premium Office Space in ${city}`;
+      description = `Spacious and modern office space in a prime commercial area of ${city}, ${district}. Perfect for startups or corporate branches.`;
+      price = Math.floor(Math.random() * 500000) + 100000;
+      attributes = { size: (Math.floor(Math.random() * 5000) + 1000) + ' sqft', floor: Math.floor(Math.random() * 10) + 1 };
     }
 
     const baseSlug = slugify(title, { lower: true, strict: true }) + '-' + index;
