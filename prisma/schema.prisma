@@ -113,15 +113,38 @@ model AuditLog {
   @@index([actorId])
 }
 
+enum MessageStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}
+
 model Message {
   id        String   @id @default(uuid())
   name      String
   email     String
+  phone     String?
   subject   String?
   message   String
   isRead    Boolean  @default(false)
+  status    MessageStatus @default(PENDING)
   createdAt DateTime @default(now())
+  
+  followups MessageFollowup[]
 
   @@index([createdAt])
   @@index([isRead])
+  @@index([status])
+}
+
+model MessageFollowup {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  status    MessageStatus
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([createdAt])
 }

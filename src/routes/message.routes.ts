@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createMessage, getMessages, getUnreadCount, markAsRead } from '../controllers/message.controller';
+import { createMessage, getMessages, getUnreadCount, markAsRead, updateStatus } from '../controllers/message.controller';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware';
 import rateLimit from 'express-rate-limit';
 
@@ -22,5 +22,6 @@ router.use(requireRole(['ADMIN', 'STAFF']));
 router.get('/', getMessages);
 router.get('/unread-count', getUnreadCount);
 router.patch('/:id/read', markAsRead);
+router.patch('/:id/status', updateStatus);
 
 export default router;

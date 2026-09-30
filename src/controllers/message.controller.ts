@@ -6,6 +6,7 @@ import { z } from 'zod';
 const MessageSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
+  phone: z.string().optional(),
   subject: z.string().optional(),
   message: z.string().min(2),
 });
@@ -45,6 +46,7 @@ export const getMessages = async (req: Request, res: Response) => {
         orderBy: { createdAt: 'desc' },
         take: limitNumber,
         skip,
+        include: { followups: { orderBy: { createdAt: 'desc' } } },
       }),
       prisma.message.count(),
     ]);
@@ -86,3 +88,37 @@ export const markAsRead = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const updateStatus = async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const { status, note } = req.body;
+    
+    // Status should be PENDING, IN_PROGRESS, or RESOLVED
+    const message = await prisma.$transaction(async (tx) => {
+      const updatedMessage = await tx.message.update({
+        where: { id },
+        data: { status },
+      });
+
+      await tx.messageFollowup.create({
+        data: {
+          messageId: id,
+          status,
+          note: note || null,
+        }
+      });
+
+      return tx.message.findUnique({
+        where: { id },
+        include: { followups: { orderBy: { createdAt: 'desc' } } }
+      });
+    });
+
+    res.json(message);
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
