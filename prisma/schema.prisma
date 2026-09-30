@@ -32,6 +32,7 @@ model Category {
   slug        String     @unique
   description String?
   icon        String?    // lucide-react icon name, e.g. "Car", "Home"
+  image       String?    // URL to the category image
   parentId    String?
   parent      Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryChildren")
