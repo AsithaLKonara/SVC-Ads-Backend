@@ -95,15 +95,30 @@ export const getAds = async (req: Request, res: Response) => {
       }
     }
 
+    const toTitleCase = (str: string) =>
+      str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+
     if (district) {
-      if (Array.isArray(district)) {
-        where.district = { in: district.map(d => String(d)) };
-      } else {
-        where.district = String(district);
-      }
+      const districts = Array.isArray(district) ? district.map(String) : [String(district)];
+      const districtVariants = new Set<string>();
+      districts.forEach(d => {
+        districtVariants.add(d);
+        districtVariants.add(d.toLowerCase());
+        districtVariants.add(toTitleCase(d));
+      });
+      where.district = { in: Array.from(districtVariants) };
     }
 
-    if (city) where.city = String(city);
+    if (city) {
+      const cities = Array.isArray(city) ? city.map(String) : [String(city)];
+      const cityVariants = new Set<string>();
+      cities.forEach(c => {
+        cityVariants.add(c);
+        cityVariants.add(c.toLowerCase());
+        cityVariants.add(toTitleCase(c));
+      });
+      where.city = { in: Array.from(cityVariants) };
+    }
     if (status) where.status = String(status) as any;
     if (isFeatured === 'true') where.isFeatured = true;
 
@@ -114,11 +129,16 @@ export const getAds = async (req: Request, res: Response) => {
     }
 
     if (condition) {
-      if (Array.isArray(condition)) {
-        where.condition = { in: condition.map(c => String(c)) };
-      } else {
-        where.condition = String(condition);
-      }
+      const conditions = Array.isArray(condition) ? condition.map(String) : [String(condition)];
+      const condVariants = new Set<string>();
+      conditions.forEach(c => {
+        condVariants.add(c);
+        if (c.toLowerCase() === "brand new") {
+          condVariants.add("New");
+          condVariants.add("Brand New");
+        }
+      });
+      where.condition = { in: Array.from(condVariants) };
     }
 
     if (q) {
