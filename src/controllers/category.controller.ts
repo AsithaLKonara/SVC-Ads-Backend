@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/db';
+import { deleteFileFromStorage } from '../services/storage.service';
 
 // Public: Get all active top-level categories with their children
 export const getCategories = async (req: Request, res: Response): Promise<void> => {
@@ -76,7 +77,7 @@ export const getAdminCategories = async (req: Request, res: Response): Promise<v
 // Admin: Create a new category
 export const createCategory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, slug, description, icon, parentId, isActive, sortOrder, attributes } = req.body;
+    const { name, slug, description, icon, image, parentId, isActive, sortOrder, attributes } = req.body;
     
     const existing = await prisma.category.findUnique({ where: { slug } });
     if (existing) {
@@ -90,6 +91,7 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
         slug,
         description,
         icon,
+        image: image || null,
         parentId: parentId || null,
         isActive: isActive ?? true,
         sortOrder: sortOrder || 0,
@@ -106,7 +108,7 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
 export const updateCategory = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const { name, slug, description, icon, parentId, isActive, sortOrder, attributes } = req.body;
+    const { name, slug, description, icon, image, parentId, isActive, sortOrder, attributes } = req.body;
 
     if (slug) {
       const existing = await prisma.category.findFirst({
@@ -118,6 +120,11 @@ export const updateCategory = async (req: Request, res: Response): Promise<void>
       }
     }
 
+    const previous = await prisma.category.findUnique({
+      where: { id },
+      select: { image: true },
+    });
+
     const category = await prisma.category.update({
       where: { id },
       data: {
@@ -125,12 +132,18 @@ export const updateCategory = async (req: Request, res: Response): Promise<void>
         slug,
         description,
         icon,
+        image: image !== undefined ? image : undefined,
         parentId: parentId !== undefined ? parentId : undefined,
         isActive: isActive !== undefined ? isActive : undefined,
         sortOrder: sortOrder !== undefined ? sortOrder : undefined,
         attributes: attributes !== undefined ? attributes : undefined,
       },
     });
+
+    if (previous?.image && image !== undefined && previous.image !== image) {
+      await deleteFileFromStorage(previous.image);
+    }
+
     res.json(category);
   } catch (error) {
     res.status(500).json({ message: 'Failed to update category' });
@@ -152,10 +165,19 @@ export const deleteCategory = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Since we don't have Ads yet, we skip checking for ads
+    const existing = await prisma.category.findUnique({
+      where: { id },
+      select: { image: true },
+    });
+
     await prisma.category.delete({
       where: { id },
     });
+
+    if (existing?.image) {
+      await deleteFileFromStorage(existing.image);
+    }
+
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete category' });
