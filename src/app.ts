@@ -10,9 +10,12 @@ import locationRoutes from './routes/location.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import auditLogRoutes from './routes/auditLog.routes';
 import messageRoutes from './routes/message.routes';
+import uploadRoutes from './routes/upload.routes';
+import mediaRoutes from './routes/media.routes';
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(cors());
@@ -32,6 +35,8 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/uploads', uploadRoutes);
+app.use('/api/media', mediaRoutes);
 
 // Global 404 handler - Returns JSON instead of HTML
 app.use((req: express.Request, res: express.Response) => {

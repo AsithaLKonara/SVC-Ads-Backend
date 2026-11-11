@@ -3,6 +3,7 @@ import prisma from '../utils/db';
 import { Prisma } from '@prisma/client';
 import slugify from 'slugify';
 import { logAuditEvent } from '../utils/audit';
+import { deleteFileFromStorage } from '../services/storage.service';
 
 export const createAd = async (req: Request, res: Response) => {
   try {
@@ -320,6 +321,15 @@ export const updateAd = async (req: Request, res: Response) => {
       }
     });
 
+    if (Array.isArray(images) && Array.isArray(existingAd.images)) {
+      const nextUrls = new Set(images.filter((item): item is string => typeof item === 'string'));
+      const removedUrls = (existingAd.images as unknown[])
+        .filter((item): item is string => typeof item === 'string' && !nextUrls.has(item));
+      if (removedUrls.length > 0) {
+        await Promise.all(removedUrls.map((url) => deleteFileFromStorage(url)));
+      }
+    }
+
     await logAuditEvent({
       action: 'AD_UPDATED',
       entity: 'Ad',
@@ -382,8 +392,8 @@ export const deleteAd = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
     
-    // Fetch before deleting so we have name for the audit log
-    const existing = await prisma.ad.findUnique({ where: { id }, select: { title: true, userId: true } });
+    // Fetch before deleting so we have name and media for audit log & storage cleanup
+    const existing = await prisma.ad.findUnique({ where: { id }, select: { title: true, userId: true, images: true } });
     if (!existing) {
       return res.status(404).json({ message: 'Ad not found' });
     }
@@ -393,6 +403,13 @@ export const deleteAd = async (req: Request, res: Response) => {
     }
 
     await prisma.ad.delete({ where: { id } });
+
+    if (Array.isArray(existing.images)) {
+      const mediaUrls = existing.images.filter((item): item is string => typeof item === 'string');
+      if (mediaUrls.length > 0) {
+        await Promise.all(mediaUrls.map((url) => deleteFileFromStorage(url)));
+      }
+    }
 
     await logAuditEvent({
       action: 'AD_DELETED',
